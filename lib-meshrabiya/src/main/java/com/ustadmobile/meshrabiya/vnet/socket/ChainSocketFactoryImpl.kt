@@ -8,7 +8,7 @@ import java.net.InetAddress
 import java.net.Socket
 import javax.net.SocketFactory
 
-class ChainSocketFactoryImpl(
+open class ChainSocketFactoryImpl(
     internal val virtualRouter: VirtualRouter,
     private val systemSocketFactory: SocketFactory = getDefault(),
     private val logger: MNetLogger,

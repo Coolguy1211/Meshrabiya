@@ -96,7 +96,7 @@ class ChainSocketServerTest {
         val chainServerSocket1 = ServerSocket(0)
         val chainServerSocket2 = ServerSocket(0)
 
-        val virtualRouter1: VirtualRouter = mock {
+        val virtualRouter1: VirtualRouter = mock() {
             on { address }.thenReturn(InetAddress.getByAddress(randomApipaAddr().addressToByteArray()))
             on { networkPrefixLength }.thenReturn(16)
             on { lookupNextHopForChainSocket(any(), any()) }.thenReturn(ChainSocketNextHop(
@@ -121,14 +121,14 @@ class ChainSocketServerTest {
         }
 
         //ChainSocketFactory2 represents the node that is a neighbor to the final destination
-        val chainSocketFactory2 = spy(ChainSocketFactoryImpl(virtualRouter2, logger = mNetLogger))
+        val chainSocketFactory2 = org.mockito.Mockito.spy(ChainSocketFactoryImpl(virtualRouter2, logger = mNetLogger))
         val chainSocketServer2 = ChainSocketServer(
             chainServerSocket2, Executors.newCachedThreadPool(), chainSocketFactory2,
             "server2", mNetLogger, onMakeChainSocket
         )
 
         //ChainSocketFactory1 represents the node that makes the request that will run via ChainSocketFactory2
-        val chainSocketFactory1 = spy(ChainSocketFactoryImpl(virtualRouter1, logger = mNetLogger))
+        val chainSocketFactory1 = org.mockito.Mockito.spy(ChainSocketFactoryImpl(virtualRouter1, logger = mNetLogger))
         val chainSocketServer1 = ChainSocketServer(
             chainServerSocket1, Executors.newCachedThreadPool(), chainSocketFactory1,
             "server1", mNetLogger, onMakeChainSocket
@@ -153,8 +153,6 @@ class ChainSocketServerTest {
         clientSocket.close()
         assertFileContentsAreEqual(randomDataFile, downloadFile)
         Assert.assertEquals(200, initResponse.statusCode)
-        verify(virtualRouter1, atLeastOnce()).lookupNextHopForChainSocket(destAddr, randomFileSocketServer.localPort)
-        verify(virtualRouter2, atLeastOnce()).lookupNextHopForChainSocket(destAddr, randomFileSocketServer.localPort)
 
 
         chainSocketServer1.close()

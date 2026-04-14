@@ -53,7 +53,9 @@ dependencies {
 
     testImplementation project(":test-shared")
     testImplementation "junit:junit:$version_junit"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$version_kotlin_mockito"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:4.1.0"
+    testImplementation "org.mockito:mockito-core:4.11.0"
+    testImplementation "org.mockito:mockito-inline:4.11.0"
     testImplementation "app.cash.turbine:turbine:$version_turbine"
 
     testImplementation "com.squareup.okhttp3:mockwebserver:$version_mockwebserver"
