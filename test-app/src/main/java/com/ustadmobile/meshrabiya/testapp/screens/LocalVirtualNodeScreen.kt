@@ -63,8 +63,12 @@ import com.ustadmobile.meshrabiya.testapp.hasBluetoothConnectPermission
 import com.ustadmobile.meshrabiya.testapp.hasNearbyWifiDevicesOrLocationPermission
 import com.ustadmobile.meshrabiya.testapp.viewmodel.LocalVirtualNodeUiState
 import com.ustadmobile.meshrabiya.testapp.viewmodel.LocalVirtualNodeViewModel
-import com.ustadmobile.meshrabiya.vnet.AndroidVirtualNode
+import java.util.UUID
 import com.ustadmobile.meshrabiya.vnet.MeshrabiyaConnectLink
+
+import com.ustadmobile.meshrabiya.testapp.composable.rememberBleDiscoverConnectLauncher
+import com.ustadmobile.meshrabiya.vnet.AndroidVirtualNode
+
 import com.ustadmobile.meshrabiya.vnet.VirtualNode
 import com.ustadmobile.meshrabiya.vnet.wifi.ConnectBand
 import com.ustadmobile.meshrabiya.vnet.wifi.HotspotType
@@ -100,6 +104,16 @@ fun LocalVirtualNodeScreen(
     val logger: MNetLogger by di.instance()
     val scope = rememberCoroutineScope()
 
+
+
+    val bleDiscoverLauncher = rememberBleDiscoverConnectLauncher(
+        serviceUuid = UUID.fromString("00000000-0000-1000-8000-00805f9b34fb")
+    ) { uri ->
+        val connectConfig = MeshrabiyaConnectLink.parseUri(uri).hotspotConfig
+        if(connectConfig != null) {
+            viewModel.onConnectWifi(connectConfig)
+        }
+    }
 
     LaunchedEffect(uiState.appUiState) {
         onSetAppUiState(uiState.appUiState)
