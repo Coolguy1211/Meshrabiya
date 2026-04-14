@@ -73,11 +73,22 @@ class BluetoothLeScannerHelper(
                 device.connectGatt(context, false, object : BluetoothGattCallback() {
                     override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                         if (newState == BluetoothGatt.STATE_CONNECTED) {
-                            Log.d(LOG_TAG, "Connected to GATT server on ${device.address}. Discovering services...")
-                            gatt.discoverServices()
+                            Log.d(LOG_TAG, "Connected to GATT server on ${device.address}. Requesting larger MTU...")
+                            gatt.requestMtu(512)
                         } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
                             Log.d(LOG_TAG, "Disconnected from GATT server on ${device.address}")
                             gatt.close()
+                        }
+                    }
+
+                    override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+                        super.onMtuChanged(gatt, mtu, status)
+                        if (status == BluetoothGatt.GATT_SUCCESS) {
+                            Log.d(LOG_TAG, "MTU changed to $mtu on ${device.address}. Discovering services...")
+                            gatt.discoverServices()
+                        } else {
+                            Log.e(LOG_TAG, "Failed to change MTU, status: $status")
+                            gatt.discoverServices()
                         }
                     }
 

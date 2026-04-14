@@ -29,7 +29,7 @@ class BluetoothLeAdvertiserHelper(
     private val advertiser: BluetoothLeAdvertiser? = bluetoothAdapter?.bluetoothLeAdvertiser
 
     private var isAdvertising = false
-    private var currentConnectUri: String? = null
+    @Volatile private var currentConnectUri: String? = null
     private var gattServer: BluetoothGattServer? = null
 
     // Generate a characteristic UUID by slightly altering the service UUID
@@ -49,12 +49,44 @@ class BluetoothLeAdvertiserHelper(
         }
     }
 
+
     private val gattServerCallback = object : BluetoothGattServerCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onServiceAdded(status: Int, service: BluetoothGattService?) {
+            super.onServiceAdded(status, service)
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.d(LOG_TAG, "GATT service added. Now starting advertiser...")
+                try {
+                    val settings = AdvertiseSettings.Builder()
+                        .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+                        .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+                        .setConnectable(true)
+                        .build()
+
+                    val data = AdvertiseData.Builder()
+                        .setIncludeDeviceName(false)
+                        .addServiceUuid(ParcelUuid(serviceUuid))
+                        .build()
+
+                    advertiser?.startAdvertising(settings, data, advertiseCallback)
+                    Log.d(LOG_TAG, "Starting BLE advertising with service UUID: $serviceUuid")
+                } catch (e: SecurityException) {
+                    Log.e(LOG_TAG, "Missing Bluetooth permissions to start advertising", e)
+                } catch (e: Exception) {
+                    Log.e(LOG_TAG, "Exception starting BLE advertising", e)
+                }
+            } else {
+                Log.e(LOG_TAG, "Failed to add GATT service, status: $status")
+            }
+        }
+
         @SuppressLint("MissingPermission")
         override fun onConnectionStateChange(device: BluetoothDevice?, status: Int, newState: Int) {
             super.onConnectionStateChange(device, status, newState)
             if (newState == BluetoothGatt.STATE_CONNECTED && device != null) {
                 Log.d(LOG_TAG, "GATT Server client connected: ${device.address}")
+            } else if (newState == BluetoothGatt.STATE_DISCONNECTED && device != null) {
+                Log.d(LOG_TAG, "GATT Server client disconnected: ${device.address}")
             }
         }
 
@@ -110,22 +142,22 @@ class BluetoothLeAdvertiserHelper(
                 )
                 service.addCharacteristic(characteristic)
                 gattServer?.addService(service)
+            } else {
+                // If GATT server already exists and service is likely added, just start advertising
+                val settings = AdvertiseSettings.Builder()
+                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+                    .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+                    .setConnectable(true)
+                    .build()
+
+                val data = AdvertiseData.Builder()
+                    .setIncludeDeviceName(false)
+                    .addServiceUuid(ParcelUuid(serviceUuid))
+                    .build()
+
+                advertiser?.startAdvertising(settings, data, advertiseCallback)
+                Log.d(LOG_TAG, "Starting BLE advertising with service UUID: $serviceUuid")
             }
-
-            val settings = AdvertiseSettings.Builder()
-                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
-                .setConnectable(true) // Must be connectable to allow GATT reads
-                .build()
-
-            // Just advertise the service UUID so scanners know to connect to this device
-            val data = AdvertiseData.Builder()
-                .setIncludeDeviceName(false)
-                .addServiceUuid(ParcelUuid(serviceUuid))
-                .build()
-
-            advertiser?.startAdvertising(settings, data, advertiseCallback)
-            Log.d(LOG_TAG, "Starting BLE advertising with service UUID: $serviceUuid")
         } catch (e: SecurityException) {
             Log.e(LOG_TAG, "Missing Bluetooth permissions to start advertising", e)
         } catch (e: Exception) {
